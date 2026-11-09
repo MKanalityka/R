@@ -834,6 +834,38 @@ section[data-testid="stSidebar"] > div {
     fill:#152C55 !important;
     text-shadow:none !important;
 }
+
+/* Panorama bez ostrej linii oddzielającej zdjęcie od niebieskiego tła.
+   Fotografię nakładamy przez pseudoelement i miękką maskę gradientową. */
+section[data-testid="stSidebar"] > div {
+    position: relative !important;
+    isolation: isolate !important;
+    background-image: linear-gradient(180deg, #245EAD 0%, #397CCB 43%, #6CA0D9 100%) !important;
+    background-color: #397CCB !important;
+}
+section[data-testid="stSidebar"] > div::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image: var(--sidebar-photo);
+    background-repeat: no-repeat;
+    background-size: 100% auto;
+    background-position: center bottom;
+    -webkit-mask-image: linear-gradient(to bottom,
+        transparent 0%, transparent 22%,
+        rgba(0,0,0,.08) 36%, rgba(0,0,0,.42) 54%,
+        rgba(0,0,0,.82) 72%, black 91%);
+    mask-image: linear-gradient(to bottom,
+        transparent 0%, transparent 22%,
+        rgba(0,0,0,.08) 36%, rgba(0,0,0,.42) 54%,
+        rgba(0,0,0,.82) 72%, black 91%);
+}
+section[data-testid="stSidebar"] > div > * {
+    position: relative;
+    z-index: 1;
+}
 </style>
 """)
 
@@ -902,7 +934,7 @@ if not st.session_state.splash_shown:
     <svg class="splash-map" viewBox="0 0 $vbw $vbh" xmlns="http://www.w3.org/2000/svg"><path d="$outline_d" pathLength="1"/></svg>
     <div class="splash-inner">
       <div class="splash-logo">$logo</div>
-      <div class="splash-title"><span class="b-light">Polski</span> Obserwator <span class="b-red">Finansowy</span></div>
+      <div class="splash-title"><span class="b-light">Polski</span> Obserwator <span class="b-red">Budżetowy</span></div>
       <div class="splash-sub">Finanse publiczne bez niedomówień · Wczytywanie danych…</div>
       <div class="splash-bar-track"><div class="splash-bar-fill"></div></div>
     </div>
