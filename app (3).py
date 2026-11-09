@@ -304,6 +304,16 @@ table.tbl td { padding: 8px 12px; border-bottom: 1px solid $border; font-weight:
 .financial-balance .balance-value { font-size:2.15rem; color:$text; font-weight:850; line-height:1.3; }
 .financial-balance .balance-desc { font-size:.96rem; color:$text; line-height:1.6; }
 .financial-balance .balance-years { font-size:.85rem; font-weight:750; color:$muted; margin-top:6px; }
+/* Roczny trend wyniku budżetu, w stylu miniwykresów pozostałych kafelków. */
+.financial-balance .balance-metrics { display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; }
+.financial-balance .balance-figures { flex:1 1 300px; min-width:0; }
+.financial-balance .balance-trend { flex:0 1 270px; min-width:180px; max-width:280px; margin-left:auto; }
+.financial-balance .balance-trend-label { font-size:.78rem; font-weight:700; color:$muted; margin-bottom:3px; }
+.financial-balance .balance-trend .kpi-spark { display:block; width:100%; height:72px; margin:0 !important; }
+@media (max-width: 580px) {
+  .financial-balance .balance-trend { flex-basis:100%; max-width:100%; margin-left:0; }
+  .financial-balance .balance-trend .kpi-spark { height:55px; }
+}
 /* Zdjęcie sidebaru, prawdziwa Warszawa, a nie grafika wygenerowana */
 section[data-testid="stSidebar"] > div {
     background: linear-gradient(180deg, rgba(24,76,163,0.92), rgba(31,89,166,0.65) 47%, rgba(14,44,84,.28)),
@@ -1524,9 +1534,14 @@ if st.session_state.current_tab == TAB_1:
     st.markdown(
         '<div class="financial-balance">'
         '<div class="balance-title">⚖ Ogólny wynik budżetu państwa</div>'
+        '<div class="balance-metrics"><div class="balance-figures">'
         f'<div class="balance-value" style="color:{P["neg"] if wynik_wyk < 0 else P["pos"]}">{pl(wynik_wyk)} mld zł</div>'
         f'<div class="balance-years">Uwzględnione lata: {escape(lata_str)}</div>'
-        f'<div class="balance-desc"><strong>Co to oznacza?</strong> {escape(opis_wyniku)}. '
+        '</div><div class="balance-trend">'
+        '<div class="balance-trend-label">Trend rocznego wyniku budżetu (mld zł)</div>'
+        + spark_svg(spark_res, P["neg"] if wynik_wyk < 0 else P["pos"])
+        + '</div></div>'
+        + f'<div class="balance-desc"><strong>Co to oznacza?</strong> {escape(opis_wyniku)}. '
         f'Wynik obliczamy jako <strong>dochody minus wydatki</strong>: '
         f'{pl(d_wyk)} mld zł − {pl(w_wyk)} mld zł = {pl(wynik_wyk)} mld zł. '
         'Gdy zaznaczysz więcej niż jeden rok, najpierw sumujemy dochody ze wszystkich wybranych lat '
