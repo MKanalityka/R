@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# Polski Obserwator Budżetowy 10.2 — kompletna aplikacja w jednym pliku Python.
-# Uruchom: streamlit run Polski_Obserwator_Budzetowy_10_2_JEDEN_PLIK.py
+# Polski Obserwator Budżetowy — wersja z logo nr 26; kompletna aplikacja w jednym pliku Python.
+# Uruchom: streamlit run Polski_Obserwator_Budzetowy_Z_LOGO_26_JEDEN_PLIK.py
 # Biblioteki (instalacja jednorazowa):
 # pip install "streamlit>=1.49,<2" "pandas>=2.2,<3" "numpy>=1.26,<3" "plotly>=5.23,<7" "requests>=2.31,<3" "openpyxl>=3.1,<4"
 # Nie potrzeba dodatkowych plików .py, .csv ani .json.
@@ -37,18 +37,22 @@ import streamlit as st
 # ---------------------------------------------------------
 # 1. USTAWIENIA STRONY
 # ---------------------------------------------------------
+# Mała ikona PNG wbudowana w kod. Nie wymaga osobnego pliku.
+POB_FAVICON_BASE64 = "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"
+
 st.set_page_config(
     page_title="Polski Obserwator Budżetowy",
-    page_icon="🇵🇱",
+    page_icon=io.BytesIO(base64.b64decode(POB_FAVICON_BASE64)),
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-BRAND_SVG = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 104' role='img' aria-label='Polski Obserwator Budżetowy — uproszczony znak Polski i analityki'>
-<path d='M 18 34 L 50 18 L 90 26 L 108 56 L 76 86 L 22 72 Z' fill='none' stroke='#F7FBFF' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/>
-<path d='M 32 66 L 46 51 L 60 57 L 78 38 L 92 46' fill='none' stroke='#F7FBFF' stroke-width='6.8' stroke-linecap='round' stroke-linejoin='round'/>
-<circle cx='92' cy='46' r='4.8' fill='#D13B46' stroke='#FFFFFF' stroke-width='1.6'/>
-</svg>"""
+BRAND_SVG = '''<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Polski Obserwator Budżetowy, logo 26: cztery poziome pasy">
+  <path d="M22 23H98V34H22Z" fill="#FFFFFF"/>
+  <path d="M22 43H87V54H22Z" fill="#FFFFFF"/>
+  <path d="M22 63H74V74H22Z" fill="#FFFFFF"/>
+  <path d="M22 86H96V97H22Z" fill="#EC2838"/>
+</svg>'''
 
 # Render osłony to pierwszy element Streamlit po ustawieniu konfiguracji.
 # Przy pierwszym renderze aplikacja może przez krótką chwilę wyświetlać
@@ -60,8 +64,8 @@ INTRO_WARSAW_POSTER = 'https://images.pexels.com/videos/29731678/dronevideo-2973
 INTRO_WARSAW_CREDIT = 'https://www.pexels.com/video/stunning-aerial-view-of-warsaw-city-at-night-29731678/'
 
 # Po aktualizacji wersji pokaż intro raz, nawet w już otwartej sesji Streamlit.
-if st.session_state.get('_intro_version_seen') != '10.2':
-    st.session_state['_intro_version_seen'] = '10.2'
+if st.session_state.get('_intro_version_seen') != 'logo26':
+    st.session_state['_intro_version_seen'] = 'logo26'
     st.session_state['splash_shown'] = False
 
 def render_intro_first():
@@ -165,7 +169,7 @@ html:has(.pob10-intro), body:has(.pob10-intro) { overflow:hidden!important; }
       + '<div class="pob10-veil" aria-hidden="true"></div><div class="pob10-topline"></div>'
       + '<main class="pob10-content">'
       + '<div class="pob10-brand">'
-      + f'<img class="pob10-logo" alt="Znak Polski i wykresu" src="data:image/svg+xml;base64,{emblem}">'
+      + f'<img class="pob10-logo" alt="Logo Polskiego Obserwatora Budżetowego — wariant 26" src="data:image/svg+xml;base64,{emblem}">'
       + '<div><div class="pob10-brand-label">POLSKA · ANALITYKA PUBLICZNA</div><span class="pob10-brand-rule"></span></div></div>'
       + '<div class="pob10-name"><span>Polski Obserwator</span><span>Budżetowy</span></div>'
       + '<div class="pob10-tagline">Dane. Decyzje. Odpowiedzialność.</div>'
@@ -1071,14 +1075,14 @@ POLAND = [
 # Głębokości 0 / 3.6 / 7.2 / 10.8 / 14.4 / 18.0 px nie krzyżują się.
 # Obrysy są wbudowane w kod — nie wymagają biblioteki shapely ani plików SVG.
 def logo_svg():
-    """Biały sygnet. Polska = dokładnie sześć prostych odcinków, bez okręgu."""
+    """Logo 26: trzy białe pasy i jeden czerwony, transparentne tło SVG."""
     return BRAND_SVG
 
 
 def logo_img(size=60, fg=None):
     uri = "data:image/svg+xml;base64," + base64.b64encode(BRAND_SVG.encode("utf-8")).decode("ascii")
     return (f'<img src="{uri}" width="{size}" height="{size}" '
-            'alt="Polski Obserwator Budżetowy — kontur Polski połączony z linią wykresu" '
+            'alt="Polski Obserwator Budżetowy — logo 26: trzy białe i jeden czerwony pas" '
             'style="display:block;width:100%;height:100%;object-fit:contain;" '
             'loading="eager">')
 
