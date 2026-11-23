@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-# Polski Obserwator Budżetowy 7.0 — kompletna aplikacja w jednym pliku Python.
-# Uruchom: streamlit run Polski_Obserwator_Budzetowy_7_0_JEDEN_PLIK.py
+# Polski Obserwator Budżetowy 10.2 — kompletna aplikacja w jednym pliku Python.
+# Uruchom: streamlit run Polski_Obserwator_Budzetowy_10_2_JEDEN_PLIK.py
 # Biblioteki (instalacja jednorazowa):
 # pip install "streamlit>=1.49,<2" "pandas>=2.2,<3" "numpy>=1.26,<3" "plotly>=5.23,<7" "requests>=2.31,<3" "openpyxl>=3.1,<4"
 # Nie potrzeba dodatkowych plików .py, .csv ani .json.
-# Wideo jest zdalne (oficjalne osadzenia YouTube i Pexels); COFOG przez API Eurostatu.
+# Czołówka: rzeczywisty film panoramy Warszawy + natychmiastowa osłona i poster; cały kod aplikacji jest w jednym .py, media pobierane z Pexels.
 
 import base64
 import io
@@ -24,43 +24,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-# Losowa czołówka filmowa (nie wymaga żadnych plików assetów).
-# Łódź i Warszawa: oficjalnie osadzone filmy lotnicze ich autorów (YouTube).
-# Warszawa: szeroka panorama miasta z Varso Tower i PKiN; rejon Ronda ONZ.
-# Łódź: prawdziwe lotnicze ujęcia zabudowy centrum; nie używamy już kadru z ulicy.
-# Kraków: oryginalny film lotniczy udostępniony przez Pexels.
-# Uwaga: odtwarzanie filmów wymaga internetu i zgody przeglądarki na osadzony odtwarzacz.
-INTRO_MOVIES = [
-    {
-        "city": "Warszawa", "location": "Śródmieście · Varso · PKiN · okolice Ronda ONZ",
-        "provider": "youtube", "youtube_id": "Q0pEewnkz5Y", "start": 8,
-        "poster": "https://i.ytimg.com/vi/Q0pEewnkz5Y/hqdefault.jpg",
-        "source": "https://www.youtube.com/watch?v=Q0pEewnkz5Y",
-        "credit": "POLAND ON AIR · Margas & Łogusz / YouTube",
-    },
-    {
-        "city": "Łódź", "location": "Śródmieście · centrum z lotu ptaka",
-        "provider": "youtube", "youtube_id": "3N2iQiH6LTg", "start": 5,
-        "poster": "https://upload.wikimedia.org/wikipedia/commons/7/76/Aerial_photo%2C_%C5%81%C3%B3d%C5%BA_Fabryczna_station_and_City_Gate_2019.jpg",
-        "poster_credit": "Zorro2212 / Wikimedia Commons (CC BY-SA)",
-        "source": "https://www.youtube.com/watch?v=3N2iQiH6LTg",
-        "credit": "Łódź | Lodz | Poland · Aerial Video 4K / YouTube",
-    },
-    {
-        "city": "Kraków", "location": "Śródmieście · widok z drona",
-        "provider": "mp4",
-        "video": "https://videos.pexels.com/video-files/40494968/17305640_3840_2160_30fps.mp4",
-        "poster": "https://images.pexels.com/videos/40494968/krakow-40494968.jpeg?auto=compress&dpr=1&h=750&w=1260",
-        "source": "https://www.pexels.com/video/stunning-aerial-view-of-krakow-cityscape-40494968/",
-        "credit": "Samuel Burai / Pexels",
-    },
-]
-
-def intro_pick_city():
-    if 'intro_city_index_v6' not in st.session_state:
-        st.session_state['intro_city_index_v6'] = secrets.randbelow(len(INTRO_MOVIES))
-    item = INTRO_MOVIES[st.session_state['intro_city_index_v6']].copy()
-    return item
+# Czołówka 10.0: jeden film warszawskiej panoramy, bez YouTube i bez losowania miast.
 
 # ---------------------------------------------------------
 # 0. DANE WBUDOWANE W APLIKACJĘ (brak konieczności wgrywania pliku)
@@ -68,17 +32,155 @@ def intro_pick_city():
 # Publiczne dane budżetowe są zdefiniowane w sekcji REALNE DANE niżej.
 # Zastępują historyczny arkusz z wartościami demonstracyjnymi.
 
-# Osadzona panorama z przykładowego projektu – bez zależności od internetu.
+# Grafika wektorowa i kod aplikacji nie wymagają plików pomocniczych.
 
 # ---------------------------------------------------------
 # 1. USTAWIENIA STRONY
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="Polski Obserwator Budżetowy",
-    page_icon="👁️",
+    page_icon="🇵🇱",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+BRAND_SVG = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 104' role='img' aria-label='Polski Obserwator Budżetowy — uproszczony znak Polski i analityki'>
+<path d='M 18 34 L 50 18 L 90 26 L 108 56 L 76 86 L 22 72 Z' fill='none' stroke='#F7FBFF' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/>
+<path d='M 32 66 L 46 51 L 60 57 L 78 38 L 92 46' fill='none' stroke='#F7FBFF' stroke-width='6.8' stroke-linecap='round' stroke-linejoin='round'/>
+<circle cx='92' cy='46' r='4.8' fill='#D13B46' stroke='#FFFFFF' stroke-width='1.6'/>
+</svg>"""
+
+# Render osłony to pierwszy element Streamlit po ustawieniu konfiguracji.
+# Przy pierwszym renderze aplikacja może przez krótką chwilę wyświetlać
+# własny pusty ekran rozruchowy Streamlit — tego nie da się zmienić w Pythonie.
+# Od momentu pierwszego renderu HTML intro zakrywa pozostałe komponenty.
+# Przeglądarka może potrzebować czasu na pobranie filmowego strumienia; do tego momentu wyświetla jego kadr podglądowy.
+INTRO_WARSAW_VIDEO = 'https://videos.pexels.com/video-files/29731678/12780732_3840_2160_30fps.mp4'
+INTRO_WARSAW_POSTER = 'https://images.pexels.com/videos/29731678/dronevideo-29731678.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1080&w=1920'
+INTRO_WARSAW_CREDIT = 'https://www.pexels.com/video/stunning-aerial-view-of-warsaw-city-at-night-29731678/'
+
+# Po aktualizacji wersji pokaż intro raz, nawet w już otwartej sesji Streamlit.
+if st.session_state.get('_intro_version_seen') != '10.2':
+    st.session_state['_intro_version_seen'] = '10.2'
+    st.session_state['splash_shown'] = False
+
+def render_intro_first():
+    """Czołówka: rzeczywiste nagranie Warszawy. Poster widoczny w trakcie startu MP4."""
+    if st.session_state.get('splash_shown', False):
+        return
+
+    emblem = base64.b64encode(BRAND_SVG.encode('utf-8')).decode('ascii')
+    film = INTRO_WARSAW_VIDEO
+    poster = INTRO_WARSAW_POSTER
+    credit_url = INTRO_WARSAW_CREDIT
+
+    css = """
+<style>
+html:has(.pob10-intro), body:has(.pob10-intro) { overflow:hidden!important; }
+.pob10-intro, .pob10-intro * { box-sizing:border-box; }
+.pob10-intro {
+  position:fixed!important;inset:0!important;width:100vw;height:100vh;height:100dvh;
+  z-index:2147483000!important;isolation:isolate;overflow:hidden;display:flex;align-items:center;
+  background:#081b32; color:#fff!important; font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;
+  animation:pob10-exit 10s linear forwards;
+}
+.pob10-poster,.pob10-video {
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;
+  pointer-events:none;
+}
+.pob10-poster{z-index:0;filter:brightness(.85) contrast(1.05) saturate(.92)}
+.pob10-video{z-index:1;background:transparent;filter:brightness(.85) contrast(1.05) saturate(.92)}
+.pob10-veil {
+  position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:linear-gradient(90deg,rgba(2,12,29,.90) 0%,rgba(3,16,37,.76) 27%,rgba(3,16,37,.33) 51%,rgba(3,16,37,.10) 72%,rgba(3,16,37,.04) 100%),
+             linear-gradient(0deg,rgba(4,13,29,.55) 0%,transparent 27%);
+}
+.pob10-topline {
+  position:absolute;top:0;left:0;width:100%;height:4px;z-index:4;
+  background:linear-gradient(90deg,#fafafa 0%,#fafafa 54%,#c83545 54%,#c83545 100%);
+}
+.pob10-content{position:relative;z-index:5;width:min(790px,89vw);margin-left:clamp(24px,7vw,116px);padding:30px 0 32px}
+.pob10-brand{display:flex;align-items:center;gap:15px;margin-bottom:32px}
+.pob10-logo {display:block;flex:0 0 auto;width:clamp(78px,7vw,112px);height:clamp(72px,6.4vw,102px);
+  object-fit:contain;filter:drop-shadow(0 4px 13px rgba(0,0,0,.27))}
+.pob10-brand-label{font-size:clamp(.71rem,.9vw,.92rem);letter-spacing:.15em;font-weight:750;line-height:1.5;color:#F8FCFF!important}
+.pob10-brand-rule{display:block;width:48px;height:2px;background:#E44552;margin-top:12px;border-radius:3px}
+.pob10-name, .pob10-name * {
+  display:block;margin:0!important;padding:0!important;font-size:clamp(1.85rem,4vw,4.1rem)!important;
+  font-weight:860!important;line-height:1.04!important;letter-spacing:-.055em!important;
+  color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:0 3px 20px rgba(0,0,0,.36)!important;
+  text-decoration:none!important;text-transform:none!important;
+}
+.pob10-name span:nth-child(2){font-weight:900!important}
+.pob10-tagline {margin-top:16px;font-size:clamp(.86rem,1.02vw,.98rem);font-weight:670;
+  letter-spacing:.025em;color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:0 2px 15px #0008}
+.pob10-description{margin-top:8px;font-size:clamp(.68rem,.78vw,.8rem);line-height:1.5;
+  color:#E0EBF8!important;-webkit-text-fill-color:#E0EBF8!important;font-weight:460}
+.pob10-progress{margin-top:40px;width:min(320px,78vw)}
+.pob10-progress-label{display:flex;justify-content:space-between;align-items:center;
+  color:#E9F1FC!important;font-size:.69rem;font-weight:770;letter-spacing:.14em;margin-bottom:12px}
+.pob10-progress-label span{color:#E9F1FC!important}
+.pob10-track{height:3px;background:#dbeafe42;border-radius:8px;overflow:hidden}
+.pob10-track:after{content:'';display:block;width:0;height:100%;border-radius:8px;
+  background:linear-gradient(90deg,#fff,#fff 65%,#d64452);animation:pob10-progress 9.3s linear forwards}
+.pob10-city,.pob10-credit{position:absolute;z-index:5;bottom:24px;font-size:.73rem;font-weight:630;
+  color:#f3f6fb!important;text-shadow:0 1px 8px #000a}
+.pob10-city{left:clamp(24px,7vw,116px)}.pob10-credit{right:24px}
+.pob10-credit a{color:#f3f6fb!important;text-decoration:underline!important;text-underline-offset:3px}
+@keyframes pob10-progress {to{width:100%}}
+@keyframes pob10-exit {0%,89%{opacity:1;visibility:visible;pointer-events:auto}
+  99%{opacity:0;pointer-events:none}100%{opacity:0;visibility:hidden;pointer-events:none}}
+.stApp div.st-key-intro_skip{position:fixed!important;right:24px!important;top:20px!important;
+  z-index:2147483600!important;animation:pob10-skip-exit 10s linear forwards!important}
+.stApp div.st-key-intro_skip button{color:#fff!important;background:rgba(4,19,42,.58)!important;
+  border:1px solid rgba(255,255,255,.50)!important;border-radius:999px!important;
+  min-height:36px!important;padding:6px 15px!important;backdrop-filter:blur(10px)!important}
+.stApp div.st-key-intro_skip button p{color:#fff!important;font-size:.76rem!important;font-weight:760!important}
+@keyframes pob10-skip-exit{0%,89%{opacity:1;visibility:visible;pointer-events:auto}
+  100%{opacity:0;visibility:hidden;pointer-events:none}}
+@media(max-width:720px){
+  .pob10-content{margin-left:22px;padding:24px 0;width:min(92vw,650px)}
+  .pob10-logo{width:72px;height:64px}
+  .pob10-brand{margin-bottom:23px}
+  .pob10-name,.pob10-name *{font-size:clamp(1.75rem,7.2vw,2.85rem)!important}
+  .pob10-tagline{font-size:.84rem;margin-top:12px}
+  .pob10-progress{margin-top:28px}
+  .pob10-city{left:22px;bottom:19px}
+  .pob10-credit{right:18px;bottom:19px;font-size:.63rem}
+}
+@media(prefers-reduced-motion:reduce){
+  .pob10-video{display:none}.pob10-intro,.stApp div.st-key-intro_skip{animation-duration:6.5s!important}
+  .pob10-track:after{animation-duration:6.1s!important}
+}
+</style>
+"""
+
+    markup = (css
+      + '<link rel="preconnect" href="https://videos.pexels.com" crossorigin>'
+      + '<link rel="preconnect" href="https://images.pexels.com" crossorigin>'
+      + '<section class="pob10-intro" aria-label="Otwarcie Polskiego Obserwatora Budżetowego">'
+      + f'<img class="pob10-poster" src="{poster}" fetchpriority="high" decoding="async" alt="Panorama centrum Warszawy">'
+      + f'<video class="pob10-video" autoplay muted playsinline loop preload="auto" poster="{poster}" aria-hidden="true">'
+      + f'<source src="{film}" type="video/mp4"></video>'
+      + '<div class="pob10-veil" aria-hidden="true"></div><div class="pob10-topline"></div>'
+      + '<main class="pob10-content">'
+      + '<div class="pob10-brand">'
+      + f'<img class="pob10-logo" alt="Znak Polski i wykresu" src="data:image/svg+xml;base64,{emblem}">'
+      + '<div><div class="pob10-brand-label">POLSKA · ANALITYKA PUBLICZNA</div><span class="pob10-brand-rule"></span></div></div>'
+      + '<div class="pob10-name"><span>Polski Obserwator</span><span>Budżetowy</span></div>'
+      + '<div class="pob10-tagline">Dane. Decyzje. Odpowiedzialność.</div>'
+      + '<div class="pob10-description">Portal analizy finansów publicznych</div>'
+      + '<div class="pob10-progress"><div class="pob10-progress-label"><span>OTWIERANIE OBSERWATORA</span><span>● ● ●</span></div>'
+      + '<div class="pob10-track"></div></div></main>'
+      + '<div class="pob10-city">WARSZAWA · NOCNY PRZELOT NAD CENTRUM</div>'
+      + f'<div class="pob10-credit">Film: <a href="{credit_url}" target="_blank" rel="noopener noreferrer">Knyazev Timur / Pexels</a></div>'
+      + '</section>')
+    st.markdown(markup, unsafe_allow_html=True)
+    with st.container(key='intro_skip'):
+        st.button('Pomiń intro →', key='intro100_skip_button', help='Przejdź od razu do analiz')
+    st.session_state.splash_shown = True
+
+render_intro_first()
 
 
 # =============================================================
@@ -258,46 +360,53 @@ def sim_game_state(annual, spending_parts, incomes):
 
 
 def sim_game_lever(key, label, base, *, min_val=60, max_val=150, step=5, helptext=''):
-    """Kontrolka pokazuje stopę finansowania oraz kwoty przed/po i zmianę."""
-    col_left, col_right = st.columns([4, 1.65], gap='medium', vertical_alignment='center')
-    base_pct = int(sim_game_value('game5_' + key))
-    with col_left:
-        st.slider(label + ' · % kwoty bazowej', min_val, max_val, base_pct, step=step,
-                  key='game5_ui_game5_' + key, on_change=sim_game_sync, args=('game5_' + key,),
-                  help=helptext or '100% = wykonanie 2025. Przykład: 110% to 10% więcej środków.')
-    factor = sim_game_value('game5_' + key) / 100
-    delta = base * (factor-1)
-    with col_right:
-        st.markdown(f'<div class="game5-value">{sim_fmt(base * factor, 2)} <small>mld zł</small>'
-                    f'<span>Przed: {sim_fmt(base, 2)} mld zł · {base_pct-100:+.0f}%</span>'
-                    f'<span>Zmiana: {sim_fmt(delta,2)} mld zł</span></div>', unsafe_allow_html=True)
+    """Jeden program = czytelny panel: baza, wybrana kwota, roczny skutek."""
+    current_pct = int(sim_game_value('game5_' + key))
+    new = base * current_pct / 100.0
+    delta = new-base
+    with st.container(key='game8_lever_' + key):
+        st.markdown(f'<div class="lever-heading">{escape(label)}</div>', unsafe_allow_html=True)
+        cols = st.columns(3, gap='small')
+        cols[0].metric('Wykonanie 2025', f'{sim_fmt(base,2)} mld zł')
+        cols[1].metric('Twój projekt', f'{sim_fmt(new,2)} mld zł')
+        cols[2].metric('Różnica roczna', f'{sim_fmt(delta,2)} mld zł',
+                       delta_color='off')
+        st.slider('Poziom finansowania względem 2025 (%)', min_val, max_val,
+                  current_pct, step=step,
+                  key='game5_ui_game5_' + key, on_change=sim_game_sync,
+                  args=('game5_' + key,),
+                  help=helptext or '100% = bez zmiany; 110% = o 10% więcej niż wykonanie 2025.')
+        st.caption(f'Wybór: {current_pct}% poziomu bazowego · '
+                   f'{"Zwiększenie" if delta>0 else "Zmniejszenie" if delta<0 else "Bez zmian"} '
+                   f'o {sim_fmt(abs(delta),2)} mld zł w skali roku.')
 
 
 def sim_game_tax_lever(key, title, base_receipt, *, low, high, ref, unit, explanation):
-    """Pokazuje dokładnie stawkę/taryfę przed i po; bez fikcyjnej jednolitej akcyzy."""
+    """Oddzielnie konkretny poziom stawki, model wpływów i różnica."""
     current = int(sim_game_value('game5_' + key))
-    lhs, rhs = st.columns([4, 1.65], vertical_alignment='center', gap='medium')
-    with lhs:
-        st.slider(title, low, high, current, step=1,
-                  key='game5_ui_game5_' + key, on_change=sim_game_sync, args=('game5_' + key,),
-                  help=explanation)
-        st.caption(explanation)
-    # Odczyt tej samej formuły co w modelu: brak rozbieżności między panelem a wynikiem.
     share = {'VAT': .60, 'PIT': .55, 'CIT': .75, 'Akcyza': .80}[key]
-    if key == 'Akcyza':
-        multiplier = 1 + share*current/100
-        ref_label = 'Taryfy bazowe (0%)'
-        change_label = f'{current:+.0f}% stawek'
-    else:
-        multiplier = 1 + share*(current-ref)/ref
-        ref_label = f'Stawka: {ref}% → {current}%'
-        change_label = f'{current-ref:+d} pp'
-    changed_receipt = max(0, base_receipt*multiplier)
-    with rhs:
-        st.markdown(f'<div class="game5-value">{sim_fmt(changed_receipt,2)} <small>mld zł</small>'
-                    f'<span>{ref_label} · {change_label}</span>'
-                    f'<span>Wpływy 2025: {sim_fmt(base_receipt,2)} mld zł; Δ {sim_fmt(changed_receipt-base_receipt,2)} mld zł</span>'
-                    '</div>', unsafe_allow_html=True)
+    multiplier = (1.0 + share * current/100.0 if key == 'Akcyza' else
+                  1.0 + share*(current-ref)/ref)
+    new = max(0, base_receipt*multiplier)
+    delta = new - base_receipt
+    with st.container(key='game8_lever_' + key):
+        st.markdown(f'<div class="lever-heading">{escape(title)}</div>', unsafe_allow_html=True)
+        if key == 'Akcyza':
+            start_lbl, final_lbl, diff_lbl = 'Taryfy bazowe', f'{current:+d}% taryf', f'{current:+d}%'
+        else:
+            start_lbl, final_lbl, diff_lbl = f'{ref}%', f'{current}%', f'{current-ref:+d} pkt proc.'
+        a,b,c = st.columns(3, gap='small')
+        a.metric('Poziom bazowy', start_lbl)
+        b.metric('Twój wybór', final_lbl)
+        c.metric('Zmiana stawki', diff_lbl)
+        st.slider('Ustaw parametr podatkowy', low, high, current, step=1,
+                  key='game5_ui_game5_' + key, on_change=sim_game_sync,
+                  args=('game5_' + key,), help=explanation)
+        st.markdown(f'<div class="lever-result">Wpływy podatkowe w modelu: '
+                    f'<b>{sim_fmt(base_receipt,2)} → {sim_fmt(new,2)} mld zł</b>'
+                    f'<span>Skutek dla dochodów: {sim_fmt(delta,2)} mld zł rocznie</span></div>',
+                    unsafe_allow_html=True)
+        st.caption(explanation + ' Wynik jest szacunkiem liniowym, bez efektów zachowań podatników.')
 
 
 def sim_game_next(step):
@@ -455,8 +564,10 @@ def sim_show_game(palette: dict, annual: dict, spending_parts: dict, incomes: di
         with st.container(key='game5_panel'):
             st.markdown('### 2. Wybierz, na co przeznaczysz pieniądze')
             st.info('Masz **10 regulowanych parametrów wydatkowych**. Dla pozostałych pozycji zakładamy '
-                    'brak zmian. Suwak 100% oznacza wykonanie 2025 r. Kwoty po prawej są wyliczane automatycznie.')
-            st.markdown('#### A. Program 800+ — z osobnymi parametrami')
+                    'brak zmian. Każda karta pokazuje punkt wyjścia (wykonanie 2025), Twoją propozycję '
+                    'i zmianę roczną. Wartość 100% oznacza brak zmian.')
+            st.markdown('#### A. Program 800+ — ustaw miesięczną wypłatę i zakres wypłat')
+            st.caption('Punkt wyjścia: 800 zł miesięcznie na uprawnione dziecko oraz 100% zakresu wypłat w 2025 r. Roczna kwota bazowa: 62,9 mld zł.')
             c1, c2 = st.columns([1.6, 1.4], gap='large')
             with c1:
                 amount = st.slider('Miesięczne świadczenie na dziecko (zł)', 0, 1600,
@@ -500,7 +611,7 @@ def sim_show_game(palette: dict, annual: dict, spending_parts: dict, incomes: di
 
     elif step == 2:
         with st.container(key='game5_panel'):
-            st.markdown('### 3. Zmień stawki podatków — konkretne wartości')
+            st.markdown('### 3. Zmień stawki podatków — porównaj punkt wyjścia i swoją decyzję')
             st.info('Podajesz **konkretne parametry podatkowe**. Wartości 2025 są punktem odniesienia, '
                     'a estymacja dochodów to liniowa ilustracja z jawnymi założeniami, nie prognoza Ministerstwa Finansów.')
             sim_game_tax_lever('VAT', 'VAT · podstawowa stawka (%)', float(incomes['VAT'][1]),
@@ -529,6 +640,7 @@ def sim_show_game(palette: dict, annual: dict, spending_parts: dict, incomes: di
     else:
         with st.container(key='game5_panel'):
             st.markdown('### 4. Sprawdź skutki swojego budżetu')
+            st.caption('Zobacz: wybrany cel → wynik finansowy → wpływ poszczególnych decyzji → progi długu. Wnioski są statyczną symulacją, nie prognozą polityczną.')
             constraint = st.session_state['game5_config']['constraint']
             allow = 0 if constraint.startswith('Nie pogarszaj') else (10 if '10 mld' in constraint else
                     (25 if '25 mld' in constraint else None))
@@ -846,7 +958,7 @@ def cofog_show_cofog(palette: dict):
 
 
 TAB_1 = "Stan Budżetu"
-TAB_2 = "Budżet w kategoriach"
+TAB_2 = "Kategorie dochodów i wydatków"
 TAB_3 = "Finanse samorządów"
 TAB_4 = "Zaprojektuj budżet"
 TAB_5 = "Eurostat COFOG"
@@ -958,37 +1070,17 @@ POLAND = [
 # Sześć precyzyjnie odsuniętych konturów Polski (obliczonych offline).
 # Głębokości 0 / 3.6 / 7.2 / 10.8 / 14.4 / 18.0 px nie krzyżują się.
 # Obrysy są wbudowane w kod — nie wymagają biblioteki shapely ani plików SVG.
-LOGO_SIX_CONTOURS = (
-    'M 9.09,22.85 L 9.92,25.80 L 8.25,31.18 L 7.83,37.23 L 12.43,37.90 L 11.59,40.59 L 13.26,54.70 L 14.93,58.07 L 15.35,62.10 L 14.51,63.85 L 22.86,65.46 L 27.04,68.15 L 30.80,72.85 L 33.72,70.16 L 37.89,71.51 L 40.40,74.87 L 45.41,78.90 L 47.50,82.26 L 52.50,80.92 L 55.43,86.30 L 60.44,83.61 L 66.28,83.61 L 72.96,84.28 L 78.39,87.91 L 79.64,80.92 L 82.15,76.21 L 87.99,70.16 L 91.33,64.11 L 86.74,54.70 L 87.16,47.31 L 89.66,38.57 L 86.32,22.44 L 82.15,18.41 L 80.48,16.93 L 70.46,17.33 L 54.17,15.72 L 52.09,16.80 L 47.91,16.66 L 44.99,15.05 L 47.08,13.70 L 43.15,10.61 L 36.64,11.55 L 20.19,19.35 L 9.09,22.85 Z',
-    'M 13.51,25.55 L 11.66,34.15 L 14.53,34.98 L 15.89,36.93 L 15.29,40.81 L 16.81,53.76 L 18.39,57.06 L 18.82,60.65 L 24.49,62.25 L 29.30,65.35 L 31.20,67.59 L 34.15,66.59 L 39.67,68.38 L 49.14,78.09 L 53.92,77.61 L 56.88,81.43 L 59.73,80.08 L 66.28,80.01 L 73.67,80.75 L 75.82,81.86 L 79.14,74.23 L 85.07,68.01 L 87.27,64.01 L 83.14,54.87 L 83.61,46.71 L 85.93,38.51 L 82.92,24.17 L 79.70,21.05 L 54.89,19.40 L 52.34,20.39 L 47.46,20.23 L 42.41,17.56 L 41.44,14.50 L 37.60,15.05 L 21.78,22.58 L 13.51,25.55 Z',
-    'M 15.69,31.49 L 18.12,33.50 L 19.36,35.95 L 19.00,41.02 L 20.37,52.82 L 22.14,57.81 L 26.12,59.04 L 32.20,63.13 L 35.26,63.13 L 41.46,65.25 L 50.64,73.96 L 54.70,74.06 L 58.34,76.72 L 73.52,77.10 L 76.53,71.71 L 83.22,63.91 L 79.62,55.76 L 80.06,46.11 L 82.21,38.44 L 79.53,25.89 L 77.82,24.24 L 69.72,24.50 L 55.60,23.09 L 52.59,23.98 L 47.00,23.80 L 40.91,20.98 L 38.70,18.53 L 16.71,28.24 L 15.69,31.49 Z',
-    'M 20.48,30.71 L 23.06,35.98 L 22.70,41.24 L 23.92,51.88 L 25.26,54.92 L 33.32,59.38 L 43.24,62.12 L 51.75,70.15 L 55.80,70.63 L 59.66,72.84 L 71.47,73.27 L 73.72,69.46 L 79.15,63.77 L 75.95,55.20 L 76.51,45.51 L 78.48,38.37 L 76.17,27.91 L 69.36,28.08 L 56.22,26.76 L 52.84,27.57 L 46.55,27.38 L 42.69,26.12 L 37.55,22.86 L 20.48,30.71 Z',
-    'M 25.80,32.59 L 27.98,52.00 L 34.46,55.80 L 45.02,59.00 L 53.01,66.53 L 56.90,67.20 L 60.86,69.21 L 69.43,69.45 L 74.81,63.09 L 72.35,55.36 L 72.96,44.91 L 74.76,38.31 L 73.12,31.64 L 56.68,30.42 L 53.09,31.16 L 46.09,30.95 L 42.17,29.87 L 36.97,27.00 L 25.80,32.59 Z',
-    'M 30.10,34.54 L 30.99,49.40 L 35.64,52.28 L 46.80,55.87 L 54.39,63.03 L 61.93,65.61 L 67.58,65.67 L 70.47,62.39 L 68.76,55.53 L 69.41,44.31 L 71.03,38.24 L 70.30,35.29 L 57.09,34.08 L 45.64,34.52 L 36.88,31.13 L 30.10,34.54 Z',
- )
-
-
 def logo_svg():
-    """Wektorowy znak marki: dokładnie sześć topograficznych obrysów Polski."""
-    colors = ("#EFFAFF", "#CCEDFF", "#A6DEFF", "#72C8FF", "#448DF2", "#F9BA6F")
-    strokes = ("1.75", "1.65", "1.65", "1.60", "1.65", "1.85")
-    lines = [
-        f'<path d="{d}" fill="none" stroke="{color}" stroke-width="{stroke}" '
-        'stroke-linejoin="round" stroke-linecap="round"/>'
-        for d, color, stroke in zip(LOGO_SIX_CONTOURS, colors, strokes)
-    ]
-    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" '
-            'role="img" aria-label="Sześć koncentrycznych konturów Polski">'
-            + "".join(lines) + '</svg>')
+    """Biały sygnet. Polska = dokładnie sześć prostych odcinków, bez okręgu."""
+    return BRAND_SVG
 
 
 def logo_img(size=60, fg=None):
-    """Wstawia sześciokonturowe logo jako samodzielny obraz SVG w kodzie Pythona."""
-    uri = "data:image/svg+xml;base64," + base64.b64encode(logo_svg().encode("utf-8")).decode("ascii")
+    uri = "data:image/svg+xml;base64," + base64.b64encode(BRAND_SVG.encode("utf-8")).decode("ascii")
     return (f'<img src="{uri}" width="{size}" height="{size}" '
-            'alt="Polska — sześć koncentrycznych konturów" '
-            'style="display:block;width:100%;height:100%;object-fit:contain;'
-            'filter:drop-shadow(0 4px 16px rgba(84,187,255,.28));">')
+            'alt="Polski Obserwator Budżetowy — kontur Polski połączony z linią wykresu" '
+            'style="display:block;width:100%;height:100%;object-fit:contain;" '
+            'loading="eager">')
 
 
 def poland_path():
@@ -1770,8 +1862,16 @@ def style_fig(fig, legend_top=False, h=None):
     fig.update_layout(template=P["template"], height=h or 420, paper_bgcolor=P["plot_paper"], plot_bgcolor=P["plot_bg"], font=dict(color=P["text"], family=FONT), margin=dict(l=6, r=6, t=10, b=6), separators=", ")
     fig.update_xaxes(gridcolor=P["grid"], zerolinecolor=P["grid"], griddash="dot", showline=False)
     fig.update_yaxes(gridcolor=P["grid"], zerolinecolor=P["grid"], griddash="dot", showline=False)
+    fig.update_layout(
+        hoverlabel=dict(bgcolor=P["bg"], bordercolor=P["border"],
+                        font=dict(color=P["text"], size=13, family=FONT)),
+        uniformtext_minsize=11, uniformtext_mode="hide",
+        hovermode="closest", font=dict(color=P["text"], family=FONT, size=13),
+    )
+    fig.update_xaxes(tickfont=dict(size=12), title_font=dict(size=12))
+    fig.update_yaxes(tickfont=dict(size=12), title_font=dict(size=12))
     if legend_top:
-        fig.update_layout(legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="left", x=0, bgcolor="rgba(0,0,0,0)", title_text=""))
+        fig.update_layout(legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="left", x=0, bgcolor="rgba(0,0,0,0)", title_text="", font=dict(size=12)))
     return fig
 
 
@@ -2212,7 +2312,7 @@ section[data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"],
 [data-testid="stAppViewContainer"] > .main, [data-testid="stMain"] {{width:100%!important;margin:0!important}}
 header[data-testid="stHeader"] {{height:0!important;min-height:0!important;display:none!important}}
 .stApp .block-container {{max-width:2100px!important;width:100%!important;
-  padding:202px clamp(18px,3.2vw,82px) 82px!important;}}
+  padding:159px clamp(18px,3.2vw,82px) 82px!important;}}
 /* Górna belka jest nieruchoma, a pod nią przewija się wyłącznie strona. */
 .stApp .st-key-site_nav {{
   position:fixed!important;inset:0 0 auto 0!important;z-index:9990!important;
@@ -2227,11 +2327,11 @@ header[data-testid="stHeader"] {{height:0!important;min-height:0!important;displ
   background:linear-gradient(90deg,#44b8ff,#7e98ff,#47e7d1 75%,#ffce73);opacity:.96;}}
 .stApp .st-key-site_nav > div {{max-width:2100px!important;margin:0 auto!important;}}
 .stApp .st-key-site_nav [data-testid="stHorizontalBlock"] {{gap:clamp(6px,1.35vw,18px)!important;}}
-.nav-brand {{display:flex;align-items:center;gap:19px;min-height:96px;padding:4px 0 8px;}}
-.nav-brand-icon {{width:96px;height:92px;flex:0 0 96px;background:transparent!important;
+.nav-brand {{display:flex;align-items:center;gap:19px;min-height:72px;padding:1px 0 5px;}}
+.nav-brand-icon {{width:67px;height:65px;flex:0 0 67px;background:transparent!important;
  border:0!important;box-shadow:none!important;border-radius:0!important;padding:0!important;}}
 .nav-brand-copy {{min-width:0;display:flex;flex-direction:column;gap:5px;}}
-.nav-brand-name {{font-size:clamp(1.3rem,2.45vw,2.38rem);line-height:1.02;
+.nav-brand-name {{font-size:clamp(1.18rem,2.15vw,2.06rem);line-height:1.02;
   letter-spacing:-.055em;font-weight:900;color:#fff;text-shadow:0 2px 12px rgba(1,22,43,.25);}}
 .nav-brand-tagline {{font-size:clamp(.76rem,1vw,.98rem);line-height:1.2;font-weight:720;
   color:#cbe7ff;letter-spacing:.065em;}}
@@ -2242,11 +2342,11 @@ header[data-testid="stHeader"] {{height:0!important;min-height:0!important;displ
 .nav-separator {{height:1px;width:100%;margin:0 0 0;background:linear-gradient(90deg,rgba(148,202,255,.08),rgba(148,202,255,.25),rgba(148,202,255,.08));}}
 /* Pięć zakładek leży na samym dolnym brzegu baneru. */
 .stApp .st-key-site_nav .st-key-nav_tabs [data-testid="stHorizontalBlock"] {{align-items:stretch!important;gap:clamp(1px,.7vw,13px)!important;}}
-.stApp .st-key-site_nav .st-key-nav_tabs button {{width:100%!important;min-height:60px!important;
+.stApp .st-key-site_nav .st-key-nav_tabs button {{width:100%!important;min-height:49px!important;
   position:relative!important;overflow:visible!important;
   color:#c8dbf4!important;background:transparent!important;border:0!important;
   border-radius:11px 11px 0 0!important;box-shadow:none!important;
-  padding:13px 5px 14px!important;transition:background .22s,color .22s!important;}}
+  padding:10px 5px 11px!important;transition:background .22s,color .22s!important;}}
 .stApp .st-key-site_nav .st-key-nav_tabs button p {{color:inherit!important;font-size:clamp(.77rem,.89vw,.99rem)!important;
   font-weight:800!important;line-height:1.15!important;white-space:nowrap!important;letter-spacing:.003em;}}
 .stApp .st-key-site_nav .st-key-nav_tabs button::after {{content:"";position:absolute;
@@ -2412,14 +2512,14 @@ header[data-testid="stHeader"] {{height:0!important;min-height:0!important;displ
  .stApp .st-key-site_nav .st-key-nav_theme button p {{font-size:.73rem!important;}}
 }}
 @media(max-width:760px) {{
- .stApp .block-container {{padding:181px 13px 40px!important;}}
+ .stApp .block-container {{padding:146px 13px 40px!important;}}
  .stApp .st-key-site_nav {{padding:7px 12px 0!important;}}
- .nav-brand {{gap:9px;min-height:77px;padding:0 0 7px;}}
- .nav-brand-icon {{height:57px;width:57px;flex-basis:57px;padding:0;border-radius:0;}}
+ .nav-brand {{gap:8px;min-height:60px;padding:0 0 4px;}}
+ .nav-brand-icon {{height:50px;width:50px;flex-basis:50px;padding:0;border-radius:0;}}
  .nav-brand-name {{font-size:clamp(.98rem,3.6vw,1.25rem);line-height:1.04;}}
  .nav-brand-tagline {{font-size:clamp(.57rem,2vw,.71rem);letter-spacing:.015em;}}
  .stApp .st-key-site_nav [data-testid="stHorizontalBlock"] {{flex-wrap:nowrap!important;gap:3px!important;}}
- .stApp .st-key-site_nav .st-key-nav_tabs button {{min-height:58px!important;padding:10px 1px!important;}}
+ .stApp .st-key-site_nav .st-key-nav_tabs button {{min-height:51px!important;padding:8px 1px!important;}}
  .stApp .st-key-site_nav .st-key-nav_tabs button p {{font-size:clamp(.55rem,2.1vw,.73rem)!important;
    white-space:normal!important;overflow-wrap:break-word!important;}}
  .stApp .st-key-site_nav .st-key-nav_theme button {{min-height:37px!important;padding:4px 8px!important;max-width:145px!important;}}
@@ -2466,74 +2566,55 @@ header[data-testid="stHeader"] {{height:0!important;min-height:0!important;displ
 </style>
 """
 st.markdown(site_css, unsafe_allow_html=True)
-
-# Ujęcie miasta wybierane tylko raz na pierwsze otwarcie sesji.
-# Wideo jest odtwarzane z oficjalnego serwera autora, bez lokalnych assetów.
-if not st.session_state.get("splash_shown", False):
-    intro_city = intro_pick_city()
-    poster = escape(intro_city['poster'], quote=True)
-    city_name = escape(intro_city['city'])
-    location_name = escape(intro_city['location'])
-    credit = escape(intro_city['credit'])
-    video_source = escape(intro_city['source'], quote=True)
-    poster_credit = intro_city.get('poster_credit', '')
-    # Oba źródła osadzane, a nie pobierane czy dołączane jako osobny asset.
-    if intro_city.get('provider') == 'youtube':
-        youtube_id = escape(intro_city['youtube_id'], quote=True)
-        start_sec = int(intro_city.get('start', 0))
-        iframe_src = (
-            f'https://www.youtube-nocookie.com/embed/{youtube_id}'
-            f'?autoplay=1&mute=1&controls=0&loop=1&playlist={youtube_id}'
-            f'&start={start_sec}&playsinline=1&rel=0&iv_load_policy=3&disablekb=1'
-        )
-        moving_background = (
-            '<div class="intro-yt-frame">'
-            f'<iframe src="{iframe_src}" title="Panorama miasta {city_name} z lotu ptaka" '
-            'referrerpolicy="strict-origin-when-cross-origin" '
-            'allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen '
-            'tabindex="-1" aria-hidden="true"></iframe></div>'
-        )
-    else:
-        mp4_src = escape(intro_city['video'], quote=True)
-        moving_background = (
-            '<video class="intro-video" autoplay muted playsinline loop preload="metadata" '
-            f'aria-hidden="true" poster="{poster}" src="{mp4_src}"></video>'
-        )
-    st.markdown(
-        '<div class="intro-overlay" aria-label="Ekran startowy Polskiego Obserwatora Budżetowego">'
-        f'<div class="intro-poster" style="background-image:url(\'{poster}\')"></div>'
-        + moving_background
-        + '<div class="intro-content">'
-        + f'<div class="intro-logo-row"><div class="intro-logo">{logo_img(136)}</div>'
-        + '<div class="intro-badge">ANALITYKA FINANSÓW PUBLICZNYCH</div></div>'
-        + '<div class="intro-heading">POLSKI<br><b>OBSERWATOR</b><br>BUDŻETOWY</div>'
-        + '<div class="intro-tagline">Dane. Decyzje. Odpowiedzialność.</div>'
-        + '<div class="intro-loading"><div class="intro-loading-label">'
-        + '<span>PRZYGOTOWUJEMY ANALIZY</span><span class="intro-pulses"><i></i><i></i><i></i></span></div>'
-        + '<div class="intro-loading-track"><div class="intro-loading-progress"></div></div></div>'
-        + '</div>'
-        + f'<div class="intro-place">{city_name} &nbsp;·&nbsp; {location_name}</div>'
-        + f'<div class="intro-credit">Film: {credit} · <a target="_blank" rel="noopener noreferrer" href="{video_source}">Źródło</a>'
-        + (f' · kadr awaryjny: {escape(poster_credit)}' if poster_credit else '')
-        + '</div></div>',
-        unsafe_allow_html=True
-    )
-    with st.container(key="intro_skip"):
-        st.button("Pomiń intro →", key="intro_skip_btn", help="Przejdź od razu do analiz")
-    st.session_state.splash_shown = True
+st.markdown(f"""<style>
+/* 8.0 — wyraźny, spokojny interfejs: gra krok po kroku + etykiety na wykresach */
+.stApp .st-key-game5_panel {{border:1px solid {P['border']}!important;border-radius:24px!important;
+ background:{P['card']}!important;padding:26px 30px 28px!important;
+ box-shadow:0 15px 45px rgba(20,44,79,.08)!important;}}
+.stApp .st-key-game5_panel h3 {{font-size:1.55rem!important;letter-spacing:-.035em!important;}}
+.stApp .st-key-game5_panel h4 {{padding-top:16px!important;border-top:1px solid {P['border']};
+ margin-top:28px!important;font-size:1.12rem!important;}}
+.stApp [class*='st-key-game8_lever_'] {{padding:19px 22px!important;border:1px solid {P['border']}!important;
+ border-radius:18px!important;margin:12px 0 16px!important;background:{P['panel']}!important;}}
+.stApp [class*='st-key-game8_lever_'] [data-testid='stMetric'] {{min-height:91px!important;
+ padding:10px 13px!important;border-radius:12px!important;}}
+.stApp [class*='st-key-game8_lever_'] [data-testid='stMetricValue'] {{font-size:1.29rem!important;}}
+.stApp [class*='st-key-game8_lever_'] [data-testid='stSlider'] {{margin:12px 0 0!important;}}
+.lever-heading {{font-weight:850;color:{P['text']};font-size:1.08rem;letter-spacing:-.015em;margin-bottom:12px;}}
+.lever-result {{border-left:3px solid {P['accent']};padding:9px 14px;
+ margin:7px 0 8px;background:{P['card']};border-radius:8px;font-size:.9rem;color:{P['text']};}}
+.lever-result b {{display:block;font-size:1.06rem;padding-top:3px;}}
+.lever-result span {{color:{P['muted']};display:block;padding-top:2px;}}
+.stApp .st-key-game5_live [data-testid='stMetric'] {{padding:17px!important;}}
+.stApp .st-key-game5_panel [data-testid='stRadio'] label,
+.stApp .st-key-game5_panel [data-testid='stCheckbox'] label {{line-height:1.45!important;}}
+.stApp [data-testid='stPlotlyChart'] .modebar {{opacity:.65;}}
+.category-legend {{display:flex;flex-wrap:wrap;gap:9px;margin:15px 0 19px;}}
+.category-legend span {{display:inline-flex;align-items:center;gap:7px;border:1px solid {P['border']};
+ padding:7px 11px;border-radius:999px;background:{P['card']};color:{P['text']};font-size:.8rem;font-weight:710;}}
+.category-dot {{width:10px;height:10px;display:inline-block;border-radius:50%;}}
+.category-cards {{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:10px 0 22px;}}
+.category-card {{padding:16px 18px;border:1px solid {P['border']};border-radius:17px;
+ background:{P['card']};min-height:133px;overflow:hidden;}}
+.category-card .cat-icon {{font-size:1.5rem;display:block;margin-bottom:7px;}}
+.category-card strong {{display:block;font-size:.83rem;line-height:1.28;color:{P['text']};}}
+.category-card b {{font-size:1.1rem;display:block;margin-top:8px;color:{P['text']};}}
+.category-card small {{color:{P['muted']};font-size:.76rem;}}
+@media(max-width:920px) {{.category-cards {{grid-template-columns:repeat(2,minmax(0,1fr));}}
+ .stApp .st-key-game5_panel {{padding:17px 15px 22px!important;}}}}
+@media(max-width:560px) {{.category-cards {{grid-template-columns:1fr;}}}}
+</style>""", unsafe_allow_html=True)
 
 with st.container(key="site_nav"):
-    c_brand, c_badge, c_theme = st.columns([6.25, 1.0, 1.18], gap="medium", vertical_alignment="center")
+    c_brand, c_theme = st.columns([7.0, 1.0], gap="medium", vertical_alignment="center")
     with c_brand:
         st.markdown(
-            f'<div class="nav-brand"><div class="nav-brand-icon">{logo_img(98)}</div>'
+            f'<div class="nav-brand"><div class="nav-brand-icon">{logo_img(72)}</div>'
             '<div class="nav-brand-copy">'
             '<div class="nav-brand-name">Polski Obserwator Budżetowy</div>'
             '<div class="nav-brand-tagline">Dane. Decyzje. Odpowiedzialność.</div>'
             '</div></div>', unsafe_allow_html=True
         )
-    with c_badge:
-        st.markdown('<div class="nav-meta"><strong>2016–2025</strong><span>Finanse publiczne</span></div>', unsafe_allow_html=True)
     with c_theme:
         st.button("☾  Ciemny" if st.session_state.theme == "light" else "☀  Jasny",
                   key="nav_theme", use_container_width=True,
@@ -2544,7 +2625,7 @@ with st.container(key="site_nav"):
         tabs = st.columns([1.7, 1.7, 1.6, 1.85, 1.55], gap="small", vertical_alignment="bottom")
         for slot, label, key, page in zip(
             tabs,
-            ["Stan budżetu", "Kategorie wydatków", "Finanse samorządów", "Zaprojektuj budżet", "Eurostat COFOG"],
+            ["Stan budżetu", "Dochody i wydatki", "Finanse samorządów", "Zaprojektuj budżet", "Eurostat COFOG"],
             ["nav_overview", "nav_categories", "nav_regions", "nav_game", "nav_cofog"],
             [TAB_1, TAB_2, TAB_3, TAB_4, TAB_5],
         ):
@@ -2609,7 +2690,7 @@ if st.session_state.current_tab in (TAB_1, TAB_2):
             )
     st.markdown('<div class="visuals-separator">Wizualizacje i wnioski</div>', unsafe_allow_html=True)
     st.markdown(section_header(
-        "Stan budżetu" if st.session_state.current_tab == TAB_1 else "Budżet w kategoriach",
+        "Stan budżetu" if st.session_state.current_tab == TAB_1 else "Kategorie dochodów i wydatków",
         "Wykonanie budżetu państwa · dane nominalne, mld zł · Ministerstwo Finansów",
         opis_zakresu_lat(wybrane_lata)), unsafe_allow_html=True)
 
@@ -2859,40 +2940,111 @@ else:
     if df_filtered.empty:
         st.warning("Brak danych spełniających wybrane kryteria filtrowania.")
     else:
-        st.markdown('<div class="card-box" style="margin-bottom:14px;"><div class="card-title">🧭 Jak czytać ten widok?</div><div class="card-note">Dochody są rozbite według podatków, a wydatki według części budżetowych. Wartości w podkategoriach zaokrąglono do 0,1 mld zł; „Pozostałe” to różnica do oficjalnych sum MF. Możesz zawężać analizę do wybranych lat i typów pozycji budżetowych.</div></div>', unsafe_allow_html=True)
-        col_c1, col_c2 = st.columns(2, gap="medium")
-        with col_c1:
-            with st.container(key="panel_category_main"):
-                st.markdown('<div class="card-title">📊 Struktura kategorii głównych</div><div class="card-note">Im dłuższy słupek, tym większa kwota w danej kategorii.</div>', unsafe_allow_html=True)
-                miara_k1 = st.radio("Wskaźnik:", ["Wykonanie", "Plan"], horizontal=True, key="radio_kat1")
-                col_mk1 = get_measure_col(miara_k1)
-                df_kat = df_filtered.groupby(["Kategoria_Główna", "Typ_Pozycji"])[col_mk1].sum().reset_index()
-                df_kat["Etykieta"] = df_kat["Kategoria_Główna"].astype(str) + " (" + df_kat["Typ_Pozycji"] + ")"
-                fig = px.bar(df_kat, y="Etykieta", x=col_mk1, color="Typ_Pozycji", orientation="h", color_discrete_map=color_map_typ, labels={col_mk1: f"{miara_k1} (mld zł)", "Etykieta": "", "Typ_Pozycji": "Typ"})
-                style_fig(fig, legend_top=True, h=440)
-                show_fig(fig)
-        with col_c2:
-            with st.container(key="panel_category_share"):
-                st.markdown('<div class="card-title">🧩 Udział kategorii z podziałem</div><div class="card-note">Wykres kołowy pokazuje udział poszczególnych kategorii w łącznych dochodach lub wydatkach.</div>', unsafe_allow_html=True)
-                miara_k2 = st.radio("Wskaźnik: ", ["Wykonanie", "Plan"], horizontal=True, key="radio_kat2")
-                col_mk2 = get_measure_col(miara_k2)
-                typ_pie = st.segmented_control("Zakres wykresu:", options=["Dochody", "Wydatki"], default="Dochody", key="seg_pie")
-                fig_pie = donut_chart(df_filtered, typ_pie, col_mk2, typ_pie)
-                if fig_pie is not None:
-                    show_fig(fig_pie)
-        with st.container(key="panel_category_detail"):
-            st.markdown('<div class="card-title">📚 Podział szczegółowy pozycji</div><div class="card-note">Wykres pomaga zidentyfikować najbardziej kosztowne lub najbardziej dochodowe pozycje w budżecie.</div>', unsafe_allow_html=True)
-            miara_k3 = st.radio("Wskaźnik:  ", ["Wykonanie", "Plan"], horizontal=True, key="radio_kat3")
-            col_mk3 = get_measure_col(miara_k3)
-            df_sz = df_filtered.groupby(["Nazwa_Kategorii_Szczegółowa", "Typ_Pozycji"])[["Plan_mld_PLN", "Wykonanie_mld_PLN"]].sum().reset_index().sort_values(["Typ_Pozycji", col_mk3], ascending=[True, False])
-            fig = px.bar(df_sz, x="Nazwa_Kategorii_Szczegółowa", y=col_mk3, color="Typ_Pozycji", color_discrete_map=color_map_typ, labels={col_mk3: f"{miara_k3} (mld zł)", "Nazwa_Kategorii_Szczegółowa": "", "Typ_Pozycji": "Typ"})
-            fig.update_xaxes(categoryorder="array", categoryarray=df_sz["Nazwa_Kategorii_Szczegółowa"].tolist(), tickangle=-45)
-            style_fig(fig, legend_top=True, h=440)
-            show_fig(fig)
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine="openpyxl") as writer:
-            df_filtered.to_excel(writer, index=False, sheet_name="Dane_Przefiltrowane")
-        st.download_button(label="Pobierz przefiltrowane dane (.xlsx)", data=output.getvalue(), file_name="Raport_Finansowy_Dane.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        st.markdown(
+            '<div class="card-box" style="margin-bottom:14px">'
+            '<div class="card-title">🧭 Kategorie dochodów i wydatków — przewodnik</div>'
+            '<div class="card-note">🟢 Dochody to źródła pieniędzy, np. VAT, PIT, CIT. '
+            '🔵 Wydatki to w tym zbiorze <b>części budżetowe</b>, np. obrona, zdrowie, ZUS; '
+            'nie należy ich utożsamiać z funkcjami COFOG. „Pozostałe” oznacza '
+            'resztę do sum MF. Najedź na wykres, aby zobaczyć dokładną kwotę i kategorię.</div></div>',
+            unsafe_allow_html=True)
+
+        value_option = st.segmented_control(
+            'Wielkość prezentowana na wykresach', ['Wykonanie', 'Plan'],
+            default='Wykonanie', key='cat8_measure') or 'Wykonanie'
+        value_key = get_measure_col(value_option)
+        cat8_icons = (
+            ('VAT','🧾'), ('PIT','👥'), ('CIT','🏢'), ('Akcyz','⛽'),
+            ('ZUS','👵'), ('emeryt','👵'), ('obron','🛡️'), ('zdrow','🏥'),
+            ('oświat','🎓'), ('edukac','🎓'), ('samorząd','🏛️'),
+            ('dług','📉'), ('spraw','⚖️'), ('pozosta','🗂️'))
+        def cat8_icon(name):
+            name = str(name).lower()
+            return next((ico for part,ico in cat8_icons if part.lower() in name), '📊')
+        def cat8_short(name, limit=37):
+            text = str(name).strip()
+            return text if len(text) <= limit else text[:limit-1].rstrip() + '…'
+        cat_summary = (df_filtered.groupby(['Typ_Pozycji','Nazwa_Kategorii_Szczegółowa'], as_index=False)[value_key]
+                       .sum().sort_values(value_key, ascending=False))
+        top_inc = cat_summary[cat_summary['Typ_Pozycji']=='Dochody'].head(2)
+        top_exp = cat_summary[cat_summary['Typ_Pozycji']=='Wydatki'].head(2)
+        cards=[]
+        for _typ,_sub in [('Dochody',top_inc),('Wydatki',top_exp)]:
+            total = cat_summary.loc[cat_summary['Typ_Pozycji']==_typ,value_key].sum()
+            for _,entry in _sub.iterrows():
+                title = str(entry['Nazwa_Kategorii_Szczegółowa'])
+                val = float(entry[value_key]); share = 100*val/total if total else 0
+                cards.append('<div class="category-card"><span class="cat-icon">'+cat8_icon(title)+'</span>'
+                             '<strong>'+escape(title)+'</strong>'
+                             '<b>'+sim_fmt(val,1)+' mld zł</b><small>'+_typ+' · '
+                             +sim_fmt(share,1)+'% tej grupy</small></div>')
+        if cards:
+            st.markdown('<div class="category-cards">'+''.join(cards)+'</div>',unsafe_allow_html=True)
+        st.markdown('<div class="category-legend">'
+                    '<span><i class="category-dot" style="background:#16a34a"></i>Dochody podatkowe i inne</span>'
+                    '<span><i class="category-dot" style="background:#2563eb"></i>Wydatki według części budżetowych</span>'
+                    '<span>📍 Kwoty nominalne · mld zł</span>'
+                    '<span>🧮 Udział liczony osobno w dochodach i wydatkach</span>'
+                    '</div>',unsafe_allow_html=True)
+        col_income,col_expense=st.columns(2,gap='medium')
+        for slot,typ,color,title,note,panel in [
+            (col_income,'Dochody','#16a34a','🟢 Skąd pochodzą wpływy?',
+             'Największe źródła dochodów budżetu państwa.', 'panel_category_main'),
+            (col_expense,'Wydatki','#2563eb','🔵 Gdzie trafiają wydatki?',
+             'Największe części budżetowe; nie wydatki według COFOG.', 'panel_category_share')]:
+            with slot:
+                with st.container(key=panel):
+                    st.markdown(f'<div class="card-title">{title}</div><div class="card-note">{note}</div>',unsafe_allow_html=True)
+                    subset=(df_filtered[df_filtered['Typ_Pozycji']==typ]
+                            .groupby('Nazwa_Kategorii_Szczegółowa',as_index=False)[value_key].sum()
+                            .sort_values(value_key,ascending=False).head(9).sort_values(value_key))
+                    if subset.empty:
+                        st.info('Brak kategorii w bieżącym filtrze.')
+                    else:
+                        subset['Podpis']=[cat8_icon(v)+' '+cat8_short(v) for v in subset['Nazwa_Kategorii_Szczegółowa']]
+                        fig=px.bar(subset,x=value_key,y='Podpis',orientation='h',
+                                   text=value_key,
+                                   labels={'Podpis':'',value_key:f'{value_option} (mld zł)'},
+                                   custom_data=['Nazwa_Kategorii_Szczegółowa'])
+                        fig.update_traces(marker_color=color,texttemplate='%{x:,.1f}',
+                                          textposition='outside',cliponaxis=False,
+                                          hovertemplate='<b>%{customdata[0]}</b><br>%{x:,.2f} mld zł<extra></extra>')
+                        fig.update_layout(showlegend=False,margin=dict(l=8,r=60,t=20,b=25))
+                        st.plotly_chart(style_fig(fig,h=465),use_container_width=True,
+                                        config={'displayModeBar':False})
+
+        with st.container(key='panel_category_detail'):
+            st.markdown('<div class="card-title">🎯 Plan a wykonanie — na ile udało się zrealizować budżet?</div>'
+                        '<div class="card-note">Porównanie planowanych i rzeczywistych kwot w '
+                        'największych pozycjach wybranej strony budżetu.</div>',unsafe_allow_html=True)
+            detail_type=st.segmented_control('Pokaż porównanie', ['Dochody','Wydatki'],
+                                             default='Dochody',key='cat8_details') or 'Dochody'
+            comp=(df_filtered[df_filtered['Typ_Pozycji']==detail_type]
+                  .groupby('Nazwa_Kategorii_Szczegółowa',as_index=False)
+                  [['Plan_mld_PLN','Wykonanie_mld_PLN']].sum()
+                  .sort_values('Wykonanie_mld_PLN',ascending=False).head(10))
+            if not comp.empty:
+                long=comp.melt(id_vars=['Nazwa_Kategorii_Szczegółowa'],
+                               value_vars=['Plan_mld_PLN','Wykonanie_mld_PLN'],
+                               var_name='Rodzaj',value_name='Kwota')
+                long['Rodzaj']=long['Rodzaj'].map({'Plan_mld_PLN':'Plan','Wykonanie_mld_PLN':'Wykonanie'})
+                long['Kategoria']=[cat8_icon(v)+' '+cat8_short(v) for v in long['Nazwa_Kategorii_Szczegółowa']]
+                fig=px.bar(long,y='Kategoria',x='Kwota',color='Rodzaj',barmode='group',
+                           orientation='h',text='Kwota',
+                           color_discrete_map={'Plan':'#94a3b8','Wykonanie':'#2563eb'},
+                           labels={'Kwota':'mld zł','Kategoria':''})
+                fig.update_traces(texttemplate='%{x:,.1f}',textposition='outside',cliponaxis=False)
+                fig.update_layout(margin=dict(l=8,r=55,t=10,b=24))
+                st.plotly_chart(style_fig(fig,legend_top=True,h=490),
+                                use_container_width=True,config={'displayModeBar':False})
+            st.caption('Różnica wykonanie minus plan ma charakter opisowy. '
+                       'Wartości zaokrąglono w źródłach i mogą zawierać pozycję „Pozostałe”.')
+        export_buffer=io.BytesIO()
+        with pd.ExcelWriter(export_buffer,engine='openpyxl') as writer:
+            df_filtered.to_excel(writer,index=False,sheet_name='Dochody_i_wydatki')
+        st.download_button('⬇ Pobierz szczegółowe dane (Excel)',data=export_buffer.getvalue(),
+                           file_name='Obserwator_kategorie_dochodow_i_wydatkow.xlsx',
+                           mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 
 # ---------------------------------------------------------
@@ -2945,3 +3097,4 @@ if st.session_state.current_tab in (TAB_1,TAB_2,TAB_3):
             "Mapa pokazuje agregację wszystkich jednostek z danego obszaru w 2025 r.; "
             "suma jednostek nie jest skonsolidowanym rachunkiem sektora."
         )
+
